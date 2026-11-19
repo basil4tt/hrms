@@ -836,7 +836,7 @@ class Employee(models.Model):
         if employee.employee_user_id is None:
             # Create user if no corresponding user exists
             username = self.email
-            password = generate_random_password()
+            password = "Welcome@123"
 
             # The email is unique among Employees, but an unrelated
             # HorillaUser can already own it as a username -- e.g. an
