@@ -246,7 +246,29 @@ class RosterScopeTests(Base):
         _grant(self.manager_user, "base.change_roster")
         response = self.client.get(reverse("roster-grid"), **HX)
         shown = {row["employee"].pk for row in response.context["rows"]}
-        self.assertEqual(shown, {self.report.pk, self.stranger.pk})
+        self.assertEqual(shown, {self.manager.pk, self.report.pk, self.stranger.pk})
+
+    def test_newly_created_employee_without_roster_or_department_appears_in_grid(self):
+        _grant(self.manager_user, "base.change_roster")
+        new_emp = make_employee(
+            company=self.report.employee_work_info.company_id,
+            email="newstarter@test.horilla",
+            first_name="New",
+            last_name="Starter",
+        )
+        response = self.client.get(reverse("roster-grid"), **HX)
+        shown = {row["employee"].pk for row in response.context["rows"]}
+        self.assertIn(new_emp.pk, shown)
+
+        cell_resp = self.client.post(
+            reverse("roster-cell-update"),
+            {"employee": new_emp.pk, "date": str(self.day), "shift": self.shift.pk},
+            **HX,
+        )
+        self.assertEqual(cell_resp.status_code, 200)
+        self.assertTrue(
+            Roster.objects.filter(employee=new_emp, date=self.day, shift=self.shift).exists()
+        )
 
     def test_a_cell_of_a_stranger_cannot_be_edited(self):
         self.assertDenied(self._cell(self.stranger))

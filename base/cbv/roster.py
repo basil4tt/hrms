@@ -220,7 +220,10 @@ class RosterGridView(HorillaCardView):
         return queryset
 
     def get_context_data(self, **kwargs):
+        from django.db.models import Value
+        from django.db.models.functions import Coalesce, Concat
         from employee.models import Employee
+        from horilla.filters import filter_name_or_badge_terms
 
         context = super().get_context_data(**kwargs)
 
@@ -233,15 +236,57 @@ class RosterGridView(HorillaCardView):
             from_date + timedelta(days=i) for i in range((to_date - from_date).days + 1)
         ]
 
-        emp_ids = list(self.queryset.values_list("employee_id", flat=True).distinct())
-        employees_qs = (
-            Employee.objects.filter(pk__in=emp_ids)
-            .select_related("employee_work_info__department_id")
-            .order_by("employee_first_name", "employee_last_name")
-        )
+        scope = _roster_scope(self.request)
+        search_val = (self.request.GET.get("search") or "").strip()
+        search_field = (self.request.GET.get("search_field") or "").strip()
+        if search_val and search_field == "shift":
+            emp_ids = list(self.queryset.values_list("employee_id", flat=True).distinct())
+            employees_qs = Employee.objects.filter(pk__in=emp_ids)
+        else:
+            employees_qs = Employee.objects.filter(is_active=True)
+            if scope is not None:
+                employees_qs = employees_qs.filter(pk__in=scope)
+            emp_filter_ids = [
+                v for v in self.request.GET.getlist("employee") if str(v).isdigit()
+            ]
+            if emp_filter_ids:
+                employees_qs = employees_qs.filter(pk__in=emp_filter_ids)
+            dept_filter = self.request.GET.get("department")
+            if dept_filter and str(dept_filter).isdigit():
+                employees_qs = employees_qs.filter(
+                    employee_work_info__department_id=dept_filter
+                )
+            name_or_badge = (self.request.GET.get("name_or_badge") or "").strip()
+            if name_or_badge:
+                employees_qs = filter_name_or_badge_terms(
+                    employees_qs,
+                    name_or_badge,
+                    "employee_first_name",
+                    "employee_last_name",
+                    "badge_id",
+                )
+            if search_val:
+                if search_field == "department":
+                    employees_qs = employees_qs.filter(
+                        employee_work_info__department_id__department__icontains=search_val
+                    )
+                else:
+                    normalized = " ".join(search_val.split())
+                    employees_qs = employees_qs.annotate(
+                        full_name=Concat(
+                            Coalesce("employee_first_name", Value("")),
+                            Value(" "),
+                            Coalesce("employee_last_name", Value("")),
+                        )
+                    ).filter(full_name__icontains=normalized)
+
+        employees_qs = employees_qs.select_related(
+            "employee_work_info__department_id"
+        ).order_by("employee_first_name", "employee_last_name")
         paginated = paginator_qry(
             employees_qs, self.request.GET.get("page"), self.records_per_page
         )
+        all_emp_ids = list(employees_qs.values_list("pk", flat=True))
 
         page_emp_ids = [emp.pk for emp in paginated]
         roster_entries = list(
@@ -278,8 +323,8 @@ class RosterGridView(HorillaCardView):
                 "roster_filter_params": get_params.urlencode(),
                 "view_id": "rosterGrid",
                 "selected_instances_key_id": "rosterEmployeeInstances",
-                "select_all_ids": json.dumps(emp_ids),
                 "queryset": paginated,
+                "select_all_ids": json.dumps(all_emp_ids),
                 "bulk_select_option": True,
             }
         )
@@ -350,6 +395,8 @@ class RosterCellUpdateView(View):
             roster.date = cell_date
             if department:
                 roster.department = department
+            else:
+                roster.department = None
             if not roster.created_by_id:
                 roster.created_by = getattr(request.user, "employee_get", None)
             roster.save()
@@ -446,6 +493,19 @@ class RosterPublishView(View):
                 published_by=publisher,
                 total_employees=len(emp_ids),
             )
+
+        if not dept_id:
+            nodept_qs = Roster.objects.filter(
+                department__isnull=True,
+                date__gte=from_date,
+                is_published=False,
+            )
+            if to_date:
+                nodept_qs = nodept_qs.filter(date__lte=to_date)
+            if scope is not None:
+                nodept_qs = nodept_qs.filter(employee_id__in=scope)
+            all_employee_ids.update(nodept_qs.values_list("employee_id", flat=True))
+            nodept_qs.update(is_published=True)
 
         my_roster_url = reverse("my-roster")
         date_label = f"{from_date}" if not to_date else f"{from_date} - {to_date}"
@@ -885,12 +945,6 @@ class RosterImportView(View):
 
             work_info = getattr(emp, "employee_work_info", None)
             dept = getattr(work_info, "department_id", None)
-
-            if not dept:
-                errors.append(
-                    f"Row {row}: {emp.get_full_name()} has no department — skipped."
-                )
-                continue
 
             for col_offset, roster_date in enumerate(dates):
                 if not roster_date:

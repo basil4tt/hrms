@@ -1416,6 +1416,8 @@ class Roster(HorillaModel):
     department = models.ForeignKey(
         "base.Department",
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="roster_entries",
         verbose_name=_("Department"),
     )

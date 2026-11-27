@@ -240,7 +240,9 @@ class HorillaCompanyManager(models.Manager):
             if filter_ids is None:
                 return qs
             if not filter_ids:
-                return qs.none()
+                return self._guarded_queryset().filter(
+                    Q(**{f"{filter_path}__isnull": True})
+                )
             try:
                 return self._guarded_queryset().filter(
                     Q(**{f"{filter_path}__in": list(filter_ids)})
