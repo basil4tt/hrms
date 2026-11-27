@@ -136,6 +136,128 @@
                 <label class="oh-timeoff-modal__stat-count">{{ asset.asset_category_id }}</label>
             </div>
         </div>
+        {% if asset.mac_address %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "MAC Address" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.mac_address }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.asset_tag %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Asset Tag" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.asset_tag }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.make %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Make" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.make }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.model %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Model" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.model }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.processor %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Processor" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.processor }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.ram %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "RAM" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.ram }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.os_details %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "OS Details" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.os_details }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.hard_disk %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Hard Disk" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.hard_disk }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.graphics_card %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Graphics Card" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.graphics_card }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.os_activation %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "OS Activation" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.os_activation }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.monitor %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Monitor" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.monitor }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.mouse %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Mouse" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.mouse }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.external_hard_disk_model %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "External Hard Disk Model" %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.external_hard_disk_model }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.external_hard_disk_serial_no %}
+            <div class="col-12 col-md-12 col-lg-6 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "External Hard Disk Serial No." %}</label>
+                    <label class="oh-timeoff-modal__stat-count">{{ asset.external_hard_disk_serial_no }}</label>
+                </div>
+            </div>
+        {% endif %}
+        {% if asset.additional_details %}
+            <div class="col-12 col-md-12 col-lg-12 mt-3">
+                <div class="oh-modal__group">
+                    <label class="oh-timeoff-modal__stat-title">{% trans "Additional Details" %}</label>
+                    <div class="oh-modal__description">
+                        {{ asset.additional_details }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
         {% if asset.asset_report.all %}
             <div class="oh-kanban__card-footer mt-3 bg-light" style="position: relative; padding-top: 0">

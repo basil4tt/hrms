@@ -776,14 +776,30 @@ class AssetDetailView(HorillaDetailedView):
         self.body = [
             (_("Serial No."), "asset_id__asset_tracking_id"),
             (_("Batch No"), "asset_id__asset_lot_number_id"),
+            (_("MAC Address"), "asset_id__mac_address"),
+            (_("Asset Tag"), "asset_id__asset_tag"),
+            (_("Make"), "asset_id__make"),
+            (_("Model"), "asset_id__model"),
+            (_("Processor"), "asset_id__processor"),
+            (_("RAM"), "asset_id__ram"),
+            (_("Hard Disk"), "asset_id__hard_disk"),
+            (_("Graphics Card"), "asset_id__graphics_card"),
+            (_("OS Details"), "asset_id__os_details"),
+            (_("OS Activation"), "asset_id__os_activation"),
+            (_("Monitor"), "asset_id__monitor"),
+            (_("Mouse"), "asset_id__mouse"),
+            (_("External Hard Disk Model"), "asset_id__external_hard_disk_model"),
+            (_("External Hard Disk Serial No."), "asset_id__external_hard_disk_serial_no"),
             (_("Assigned Date"), "assigned_date"),
             (_("Status"), "asset_detail_status"),
             (_("Assigned by"), "assigned_by_employee_id"),
             (_("Description"), "asset_id__asset_description"),
+            (_("Additional Details"), "asset_id__additional_details"),
             # ("Category","asset_id__asset_category_id")
         ]
         self.cols = {
             "asset_id__asset_description": 12,
+            "asset_id__additional_details": 12,
         }
 
     action_method = "asset_detail_action"

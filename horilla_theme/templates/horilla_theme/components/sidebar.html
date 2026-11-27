@@ -15,7 +15,7 @@
     }
     #sidebar:hover,
     #sidebar.sidebar-pinned {
-        width: 13rem !important; /* 208 px — expanded */
+        width: 15rem !important; /* 240 px — expanded */
     }
 
     /* Labels & chevron: invisible when collapsed, fade in when expanded */
@@ -62,26 +62,28 @@
         display: none !important;
     }
 
-    /* Current-page label / chevron: solid fill → white text */
+    /* Current-page label / chevron: traditional flat row with accent text */
     .sideboxmain.sidebox-current .oh-sidebar-label {
-        color: #fff;
+        color: var(--sidebar-accent-dark) !important;
+        font-weight: 600 !important;
+    }
+    body.dark .sideboxmain.sidebox-current .oh-sidebar-label {
+        color: #ffffff !important;
     }
     .sideboxmain.sidebox-current .sidebar-chevron {
         transform: rotate(180deg);
-        color: #fff;
+        color: var(--sidebar-accent-dark);
     }
-    /* Hover label: soft tint → accent text (distinct from the solid current page) */
+    /* Hover label: soft tint → accent text (distinct from the active row) */
     .sideboxmain.sidebox-active:not(.sidebox-current) .oh-sidebar-label {
-        color: var(--sidebar-accent);
+        color: var(--sidebar-accent-dark);
     }
     body.dark .sideboxmain.sidebox-active:not(.sidebox-current) .oh-sidebar-label {
         color: #e5e7eb;
     }
-    /* Same label treatment for plain-hover items (e.g. Dashboard) that have no
-       JS-managed 'sidebox-active' class — keeps hover styling consistent
-       across every sidebar entry. */
+    /* Same label treatment for plain-hover items (e.g. Dashboard) */
     .sideboxmain:hover:not(.sidebox-current) .oh-sidebar-label {
-        color: var(--sidebar-accent);
+        color: var(--sidebar-accent-dark);
     }
     body.dark .sideboxmain:hover:not(.sidebox-current) .oh-sidebar-label {
         color: #e5e7eb;
@@ -100,7 +102,7 @@
         transition: left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
     #sidebar.sidebar-pinned ~ .oh-main-content .oh-main-header {
-        left: 13rem;
+        left: 15rem;
     }
 
     /* Floating action button: track sidebar width (collapsed / hover / pinned) */
@@ -110,7 +112,7 @@
     }
     #sidebar:hover ~ #floating-buttons .fab-container,
     #sidebar.sidebar-pinned ~ #floating-buttons .fab-container {
-        left: 13rem;
+        left: 15rem;
     }
 
     /* Company name / link in sidebar header */
@@ -177,84 +179,115 @@
     }
 
     /* Module button transitions */
-    .sideboxmain {
-        transition: background-color 0.18s ease, box-shadow 0.18s ease;
+    /* Traditional flat sidebar rows: remove heavy gray pill boxes from global.css */
+    #sidebar .sideboxmain {
+        position: relative;
+        background-color: transparent !important;
+        margin-top: 0 !important;
+        margin-bottom: 2px !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 0.75rem !important;
+        color: #334155;
+        transition: background-color 0.15s ease, color 0.15s ease;
     }
-    /* sidebox-active = hover-only indicator (cleared on mouseleave) → soft accent tint + accent text.
-       sidebox-current = current page (persists) → solid accent fill + white text/icon.
-       Both derive from the selected company theme color via the --sidebar-accent vars. */
-    /* Hover indicator (temporary): soft tint, no elevation.
-       :not(.sidebox-current) so the current page keeps its solid fill even while hovered. */
-    .sideboxmain.sidebox-active:not(.sidebox-current) {
+    body.dark #sidebar .sideboxmain {
+        color: #d1d5db;
+    }
+    #sidebar .sideboxmain .oh-sidebar-label {
+        color: inherit;
+        font-size: 0.84rem;
+        font-weight: 500;
+    }
+    /* Suppress legacy active triangle indicator from global.css */
+    #sidebar .sideboxmain.active::after,
+    #sidebar .sideboxmain.sidebox-current::after {
+        content: none !important;
+        display: none !important;
+    }
+    /* Hover indicator (expanded & collapsed): subtle soft tint */
+    #sidebar .sideboxmain.sidebox-active:not(.sidebox-current),
+    #sidebar .sideboxmain:hover:not(.sidebox-current) {
         background-color: var(--sidebar-accent-soft) !important;
-        box-shadow: none;
+        box-shadow: none !important;
     }
-    body.dark .sideboxmain.sidebox-active:not(.sidebox-current) {
+    body.dark #sidebar .sideboxmain.sidebox-active:not(.sidebox-current),
+    body.dark #sidebar .sideboxmain:hover:not(.sidebox-current) {
         background-color: rgba(255, 255, 255, 0.08) !important;
     }
-    /* Plain-hover (top-level links like Dashboard with no JS-managed
-       'sidebox-active' class) — mirrors the soft-tint hover above. */
-    body.dark .sideboxmain:hover:not(.sidebox-current) {
-        background-color: rgba(255, 255, 255, 0.08) !important;
+    /* Current page (expanded): flat soft accent fill + crisp 3px left accent bar */
+    #sidebar .sideboxmain.sidebox-current {
+        background-color: var(--sidebar-accent-soft) !important;
+        color: var(--sidebar-accent-dark) !important;
+        box-shadow: none !important;
     }
-    /* Current page (persistent): solid accent fill + subtle elevation. */
-    .sideboxmain.sidebox-current {
-        background-color: var(--sidebar-accent) !important;
-        box-shadow: 0 4px 14px -4px rgba(20, 20, 30, 0.25);
+    #sidebar:hover .sideboxmain.sidebox-current::before,
+    #sidebar.sidebar-pinned .sideboxmain.sidebox-current::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background-color: var(--sidebar-accent);
     }
-    body.dark .sideboxmain.sidebox-current {
-        background-color: var(--sidebar-accent-dark) !important;
+    body.dark #sidebar .sideboxmain.sidebox-current {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
     }
 
-    /* Submenu link hover (flyout + expanded accordion) — theme-tinted so it's
-       clearly visible instead of the near-white Tailwind hover:bg-gray-50.
-       No !important: id-scoped specificity beats the utility class in light
-       mode, while the dark rule below still wins under body.dark. */
+    /* Submenu link hover (flyout + expanded accordion) */
     #sidebarFlyout .sidebar-subnav-link:hover,
     #sidebar .sidebar-subnav-link:hover {
         background-color: var(--sidebar-accent-soft);
-        color: var(--sidebar-accent) !important;
+        color: var(--sidebar-accent-dark) !important;
     }
 
-    /* Active submenu link highlight: solid accent fill, matching the
-       parent item's .sidebox-current weight so the active submenu reads
-       as clearly "selected" rather than a faint tint. */
+    /* Active submenu link highlight: clean flat accent tint + left indicator */
     .oh-sidebar-active-link {
-        background-color: var(--sidebar-accent) !important;
-        color: #ffffff !important;
-        font-weight: 600;
-        box-shadow: 0 4px 14px -4px rgba(20, 20, 30, 0.25);
+        position: relative;
+        background-color: var(--sidebar-accent-soft) !important;
+        color: var(--sidebar-accent-dark) !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
     }
 
-    /* Dark mode: mirror light-mode contrast — solid accent fill + bright text */
+    /* Dark mode: mirror light-mode contrast */
     body.dark #sidebar .sidebar-subnav-link:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
         color: #e5e7eb !important;
     }
     body.dark #sidebar .oh-sidebar-active-link {
-        background-color: var(--sidebar-accent-dark) !important;
+        background-color: rgba(255, 255, 255, 0.12) !important;
         color: #ffffff !important;
-        font-weight: 600;
-        box-shadow: 0 4px 14px -4px rgba(20, 20, 30, 0.25);
+        font-weight: 600 !important;
+        box-shadow: none !important;
     }
 
-    /* Make icons visible: dark-gray by default (also on hover, where the soft
-       tint background keeps them readable), white only on the current page's
-       solid accent fill. Overrides the hardcoded fill="#ffffff" and Tailwind
-       group-hover utilities that would otherwise leave icons invisible. */
+    /* Icons: muted slate at rest, darker/crisp on hover and current page (light mode),
+       white only inside collapsed icon rail's solid active circle. */
     #sidebar nav .sideboxmain img,
     #sidebar nav .sideboxmain svg:not(.sidebar-chevron) {
         filter: brightness(0) opacity(0.55) !important;
-        transition: filter 0.18s ease !important;
+        transition: filter 0.15s ease !important;
     }
+    #sidebar nav .sideboxmain:hover img,
+    #sidebar nav .sideboxmain.sidebox-active img,
     #sidebar nav .sideboxmain.sidebox-current img,
+    #sidebar nav .sideboxmain:hover svg:not(.sidebar-chevron),
+    #sidebar nav .sideboxmain.sidebox-active svg:not(.sidebar-chevron),
     #sidebar nav .sideboxmain.sidebox-current svg:not(.sidebar-chevron) {
+        filter: brightness(0) opacity(0.88) !important;
+    }
+    #sidebar:not(:hover):not(.sidebar-pinned) nav .sideboxmain.sidebox-current {
+        background-color: var(--sidebar-accent) !important;
+    }
+    #sidebar:not(:hover):not(.sidebar-pinned) nav .sideboxmain.sidebox-current img,
+    #sidebar:not(:hover):not(.sidebar-pinned) nav .sideboxmain.sidebox-current svg:not(.sidebar-chevron) {
         filter: brightness(0) invert(1) !important;
     }
 
-    /* Dark mode: the resting `brightness(0)` (pure black) icons are invisible on
-       the dark sidebar. Invert to a muted light glyph at rest (also on hover, over
-       the subtle white-overlay tint), full white on the current page's solid fill. */
+    /* Dark mode icons */
     body.dark #sidebar nav .sideboxmain img,
     body.dark #sidebar nav .sideboxmain svg:not(.sidebar-chevron) {
         filter: brightness(0) invert(1) opacity(0.65) !important;
@@ -378,27 +411,29 @@
         transition: background-color 0.12s ease, color 0.12s ease;
     }
     #sidebarFlyout a.sidebar-subnav-link:hover {
-        background-color: color-mix(in srgb, {{ theme_obj.primary_600|default:"#E54F38" }} 8%, transparent) !important;
-        color: {{ theme_obj.primary_600|default:"#E54F38" }} !important;
+        background-color: color-mix(in srgb, {{ theme_obj.primary_600|default:"#6366f1" }} 8%, transparent) !important;
+        color: {{ theme_obj.primary_700|default:"#4f46e5" }} !important;
     }
     #sidebarFlyout a.sidebar-subnav-link.oh-sidebar-active-link {
-        background-color: var(--sidebar-accent) !important;
-        color: #ffffff !important;
-        font-weight: 600;
-        box-shadow: 0 4px 14px -4px rgba(20, 20, 30, 0.25);
+        background-color: var(--sidebar-accent-soft) !important;
+        color: var(--sidebar-accent-dark) !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+        border-left: 3px solid var(--sidebar-accent);
     }
     body.dark #sidebarFlyout a.sidebar-subnav-link {
         color: #d1d5db;
     }
     body.dark #sidebarFlyout a.sidebar-subnav-link:hover {
-        background-color: color-mix(in srgb, {{ theme_obj.primary_600|default:"#E54F38" }} 15%, transparent) !important;
-        color: {{ theme_obj.primary_400|default:"#F87060" }} !important;
+        background-color: color-mix(in srgb, {{ theme_obj.primary_600|default:"#6366f1" }} 15%, transparent) !important;
+        color: {{ theme_obj.primary_400|default:"#a5b4fc" }} !important;
     }
     body.dark #sidebarFlyout a.sidebar-subnav-link.oh-sidebar-active-link {
-        background-color: var(--sidebar-accent-dark) !important;
+        background-color: rgba(255, 255, 255, 0.12) !important;
         color: #ffffff !important;
-        font-weight: 600;
-        box-shadow: 0 4px 14px -4px rgba(20, 20, 30, 0.25);
+        font-weight: 600 !important;
+        box-shadow: none !important;
+        border-left: 3px solid var(--sidebar-accent);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -525,20 +560,54 @@
     }
 </style>
 <div id="sidebar" class="fixed inset-y-0 left-0 bg-white border-r border-r-dark-50 z-50">
-    <div class="p-4">
-        <!-- Header: hamburger pin toggle + company logo -->
-        <div class="flex items-center gap-3 mb-6">
+    <div class="px-3 py-4">
+        <!-- Header: company logo + name on left, pin toggle on right -->
+        <div class="flex items-center justify-between gap-2 pb-3.5 mb-3 border-b border-gray-200/80">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                {% if request.session.selected_company_instance %}
+                    <img
+                        src="{% if request.session.selected_company_instance.icon and request.session.selected_company_instance.icon != '/404/' %}{{ request.session.selected_company_instance.icon }}{% else %}/static/horilla_theme/assets/img/horilla-logo.png{% endif %}"
+                        class="oh-sidebar-label w-8 h-8 rounded-lg object-contain flex-shrink-0"
+                        title="{{ request.session.selected_company_instance.company }}"
+                        alt="{{ request.session.selected_company_instance.company }}"
+                    >
+                    <div class="oh-sidebar__company-details oh-sidebar-label min-w-0">
+                        <span
+                            class="oh-sidebar__company-title truncate"
+                            style="font-size: 13.5px"
+                        >{{ request.session.selected_company_instance.company }}</span>
+                        <a href="#" class="oh-sidebar__company-link truncate" style="font-size: 11px">
+                            {% trans request.session.selected_company_instance.text %}
+                        </a>
+                    </div>
+                {% else %}
+                    <img
+                        src="{% if request.user.employee_get.employee_work_info.company_id.icon %}{{ request.user.employee_get.employee_work_info.company_id.icon.url }}{% else %}/static/horilla_theme/assets/img/horilla-logo.png{% endif %}"
+                        alt="{% trans 'Company logo' %}"
+                        class="oh-sidebar-label w-8 h-8 rounded-lg object-contain flex-shrink-0"
+                    >
+                    <div class="oh-sidebar__company-details oh-sidebar-label min-w-0">
+                        <span
+                            class="oh-sidebar__company-title truncate"
+                            style="font-size: 13.5px"
+                        >{{ request.user.employee_get.employee_work_info.company_id }}</span>
+                        <a href="#" class="oh-sidebar__company-link truncate" style="font-size: 11px">
+                            {% trans "My Company" %}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
             <button
                 id="sidebarPinBtn"
                 title="{% trans 'Lock sidebar open' %}"
                 aria-label="{% trans 'Lock sidebar open' %}"
                 data-pin-label="{% trans 'Lock sidebar open' %}"
                 data-unpin-label="{% trans 'Unlock sidebar (auto-collapses on hover-out)' %}"
-                class="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors duration-150"
+                class="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors duration-150"
             >
                 <!-- Unlocked padlock: shown when the sidebar is NOT pinned (hover-to-expand mode) -->
                 <svg
-                    class="sidebar-lock-open w-5 h-5"
+                    class="sidebar-lock-open w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
@@ -553,7 +622,7 @@
                 </svg>
                 <!-- Locked padlock: shown when the sidebar IS pinned (locked open) -->
                 <svg
-                    class="sidebar-lock-closed w-5 h-5"
+                    class="sidebar-lock-closed w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
@@ -567,40 +636,6 @@
                     />
                 </svg>
             </button>
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-                {% if request.session.selected_company_instance %}
-                    <img
-                        src="{% if request.session.selected_company_instance.icon and request.session.selected_company_instance.icon != '/404/' %}{{ request.session.selected_company_instance.icon }}{% else %}/static/horilla_theme/assets/img/horilla-logo.png{% endif %}"
-                        class="oh-sidebar-label w-7 h-7 rounded-full flex-shrink-0"
-                        title="{{ request.session.selected_company_instance.company }}"
-                        alt="{{ request.session.selected_company_instance.company }}"
-                    >
-                    <div class="oh-sidebar__company-details oh-sidebar-label min-w-0">
-                        <span
-                            class="oh-sidebar__company-title truncate"
-                            style="font-size: 13px"
-                        >{{ request.session.selected_company_instance.company }}.</span>
-                        <a href="#" class="oh-sidebar__company-link truncate" style="font-size: 10px">
-                            {% trans request.session.selected_company_instance.text %}
-                        </a>
-                    </div>
-                {% else %}
-                    <img
-                        src="{% if request.user.employee_get.employee_work_info.company_id.icon %}{{ request.user.employee_get.employee_work_info.company_id.icon.url }}{% else %}/static/horilla_theme/assets/img/horilla-logo.png{% endif %}"
-                        alt="{% trans 'Company logo' %}"
-                        class="oh-sidebar-label w-7 h-7 rounded-full flex-shrink-0"
-                    >
-                    <div class="oh-sidebar__company-details oh-sidebar-label min-w-0">
-                        <span
-                            class="oh-sidebar__company-title truncate"
-                            style="font-size: 13px"
-                        >{{ request.user.employee_get.employee_work_info.company_id }}.</span>
-                        <a href="#" class="oh-sidebar__company-link truncate" style="font-size: 10px">
-                            {% trans "My Company" %}
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
         </div>
 
         <script>
@@ -690,7 +725,7 @@
             Collapses to just the number when the sidebar is unpinned.
         {% endcomment %}
         <div class="sidebar-version px-4 pt-3 pb-6 border-t border-t-dark-50 text-[11px] leading-none text-[#999] select-text"
-             title="{% trans 'Horilla HR version' %} {{ horilla_version }}">
+             title="{% trans 'Leapcodes HR version' %} {{ horilla_version }}">
             <span class="sidebar-version__label">{% trans "Version" %}</span>
             <span class="font-medium">{{ horilla_version }}</span>
         </div>
@@ -848,7 +883,7 @@
           // is in hover/pinned state so the flyout never lands inside it.
           if (sidebarEl.matches(':hover') || sidebarEl.classList.contains('sidebar-pinned')) {
             var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-            var expandedRight = sidebarRect.left + rootFontSize * 13; /* 13rem */
+            var expandedRight = sidebarRect.left + rootFontSize * 15; /* 15rem */
             if (expandedRight > sidebarRight) sidebarRight = expandedRight;
           }
 
@@ -1059,7 +1094,7 @@
           if (!animate && content) content.style.transition = "none";
 
           sidebarEl.classList.toggle("sidebar-pinned", pinned);
-          if (content) content.style.marginLeft = pinned ? "13rem" : "";
+          if (content) content.style.marginLeft = pinned ? "15rem" : "";
 
           // Keep the lock button's tooltip/aria-label in sync with the state.
           // (The open vs closed padlock icon itself is swapped via CSS on .sidebar-pinned.)

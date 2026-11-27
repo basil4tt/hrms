@@ -2805,12 +2805,16 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
         for d in _iter_dates(max(h.start_date, from_date), min(h.end_date, leave_to)):
             holiday_map[d] = h.name
 
-    # -- Week-off dates -------------------------------------------------------
+    # -- Week-off dates & Roster shifts ---------------------------------------
     roster_entries = list(
-        Roster.objects.filter(
-            employee_id=emp, date__range=(from_date, leave_to)
-        ).values("date", "is_off")
+        Roster._base_manager.filter(
+            employee_id=emp, is_active=True, date__range=(from_date, leave_to)
+        ).values("date", "is_off", "shift_id", "shift__employee_shift")
     )
+    roster_shift_map = {
+        e["date"]: (e["is_off"], e["shift_id"], e["shift__employee_shift"] or "")
+        for e in roster_entries
+    }
     week_off_dates = employee_week_off_dates(
         [(e["date"], e["is_off"]) for e in roster_entries],
         company_week_off_dates(from_date, leave_to),
@@ -2874,15 +2878,32 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
         "saturday",
         "sunday",
     ]
-    _wi_row = _EWI.objects.filter(employee_id=emp).values("shift_id_id").first()
+    _wi_row = (
+        _EWI._base_manager.filter(employee_id=emp)
+        .values("shift_id_id", "shift_id__employee_shift")
+        .first()
+    )
     _cal_shift_pk = _wi_row["shift_id_id"] if _wi_row else None
+    _cal_shift_name = (_wi_row["shift_id__employee_shift"] or "") if _wi_row else ""
     cal_shift_secs = {}  # {day_name: seconds}
     cal_shift_times = {}  # {(shift, day_name): (start, end)}
-    _cal_shift_ids = {
-        r["shift_id_id"] for r in att_map.values() if r.get("shift_id_id")
-    } | {_cal_shift_pk}
-    for _ss in _ESS.objects.filter(
-        shift_id__in=[i for i in _cal_shift_ids if i]
+    cal_shift_names = {}  # {shift_id: employee_shift}
+    if _cal_shift_pk:
+        cal_shift_names[_cal_shift_pk] = _cal_shift_name
+    for _r in att_map.values():
+        if _r.get("shift_id_id"):
+            cal_shift_names[_r["shift_id_id"]] = ""
+    for _roff, _rsid, _rsname in roster_shift_map.values():
+        if _rsid:
+            cal_shift_names[_rsid] = _rsname
+    _cal_shift_ids = set(cal_shift_names.keys())
+    if _cal_shift_ids:
+        for _sid, _sname in EmployeeShift._base_manager.filter(
+            id__in=_cal_shift_ids
+        ).values_list("id", "employee_shift"):
+            cal_shift_names[_sid] = _sname
+    for _ss in _ESS._base_manager.filter(
+        shift_id__in=[i for i in _cal_shift_ids if i], is_active=True
     ).values(
         "shift_id_id", "day__day", "minimum_working_hour", "start_time", "end_time"
     ):
@@ -2896,9 +2917,39 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
         )
 
     def _times_for(d):
-        """The shift hours of a day: the shift it was worked on, else the employee's own."""
-        shift = (att_map.get(d) or {}).get("shift_id_id") or _cal_shift_pk
+        """The shift hours of a day: roster shift if set, else worked shift or own shift."""
+        _rinfo = roster_shift_map.get(d)
+        _rsid = _rinfo[1] if (_rinfo and not _rinfo[0]) else None
+        shift = (att_map.get(d) or {}).get("shift_id_id") or _rsid or _cal_shift_pk
         return cal_shift_times.get((shift, _CAL_DAY_NAMES[d.weekday()]))
+
+    def _shift_display_for(d, status=None):
+        """Return (shift_label, shift_time_str) for calendar day cell."""
+        _rinfo = roster_shift_map.get(d)
+        if _rinfo:
+            _roff, _rsid, _rsname = _rinfo
+            if _roff:
+                return ("OFF", "")
+            if _rsid:
+                _t = cal_shift_times.get((_rsid, _CAL_DAY_NAMES[d.weekday()]))
+                _tstr = (
+                    f"{_t[0].strftime('%I:%M %p').lstrip('0')} - {_t[1].strftime('%I:%M %p').lstrip('0')}"
+                    if _t and _t[0] and _t[1]
+                    else ""
+                )
+                return (_rsname or cal_shift_names.get(_rsid, ""), _tstr)
+        if status == "week_off" or d in week_off_dates:
+            return ("OFF", "")
+        _sid = (att_map.get(d) or {}).get("shift_id_id") or _cal_shift_pk
+        if _sid:
+            _t = cal_shift_times.get((_sid, _CAL_DAY_NAMES[d.weekday()]))
+            _tstr = (
+                f"{_t[0].strftime('%I:%M %p').lstrip('0')} - {_t[1].strftime('%I:%M %p').lstrip('0')}"
+                if _t and _t[0] and _t[1]
+                else ""
+            )
+            return (cal_shift_names.get(_sid, ""), _tstr)
+        return ("", "")
 
     # -- Per-day manual hours from calendar editor ----------------------------
     cal_daily_hours_map = {}  # {date: (hours_second, is_manually_edited)}
@@ -3114,6 +3165,9 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
                         )
                     )
                     if d < from_date or (d > to_date and not future_leave):
+                        _oor_shift_label, _oor_shift_time = (
+                            _shift_display_for(d) if d in roster_shift_map else ("", "")
+                        )
                         cells.append(
                             {
                                 "day": n,
@@ -3123,6 +3177,8 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
                                 "conflict_with": None,
                                 "resolution": None,
                                 "is_conflict": False,
+                                "shift_label": _oor_shift_label,
+                                "shift_time": _oor_shift_time,
                             }
                         )
                     else:
@@ -3215,12 +3271,15 @@ def _build_calendar_context(emp, from_date, to_date, show_future_leave=False):
                                 _ot_pending = not ot_counts(
                                     _a["attendance_overtime_approve"], _res
                                 )
+                        _slabel, _stime = _shift_display_for(d, status)
                         cells.append(
                             {
                                 "day": n,
                                 "date": d,
                                 "status": status,
                                 "detail": detail,
+                                "shift_label": _slabel,
+                                "shift_time": _stime,
                                 "conflict_with": conflict_with,
                                 "resolution": resolution_badge,
                                 "is_conflict": is_conflict,

@@ -65,6 +65,9 @@ phone_validator = RegexValidator(
 )
 
 
+DEFAULT_EMPLOYEE_PASSWORD = "Welcome@123"
+
+
 class Employee(models.Model):
     """
     Employee model
@@ -836,7 +839,7 @@ class Employee(models.Model):
         if employee.employee_user_id is None:
             # Create user if no corresponding user exists
             username = self.email
-            password = "Welcome@123"
+            password = DEFAULT_EMPLOYEE_PASSWORD
 
             # The email is unique among Employees, but an unrelated
             # HorillaUser can already own it as a username -- e.g. an

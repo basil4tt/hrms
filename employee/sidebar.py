@@ -46,6 +46,10 @@ SUBMENUS = [
         "accessibility": "employee.sidebar.work_schedules_accessibility",
     },
     {
+        "menu": _("My Roster"),
+        "redirect": reverse_lazy("my-roster"),
+    },
+    {
         "menu": _("Policies & Discipline"),
         "redirect": reverse_lazy("policies-discipline-view"),
         # disciplinary-actions-detail-view/<pk>/ is a sibling URL (not a

@@ -305,18 +305,24 @@
                                             </span>
                                         {% elif not entry.is_published %}
                                             <span
-                                                class="inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold max-w-[70px] truncate bg-[#f3f0fb] text-[#7e57c2] border border-[#d1c4e9]"
-                                                title="{{ entry.notes }}"
+                                                class="inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold max-w-[90px] truncate bg-[#f3f0fb] text-[#7e57c2] border border-[#d1c4e9]"
+                                                title="{% if entry.shift_time_label %}{{ entry.shift_time_label }}{% endif %}{% if entry.notes %} ({{ entry.notes }}){% endif %}"
                                             >
                                                 {{ entry.shift.employee_shift }}
                                             </span>
+                                            {% if entry.shift_time_label %}
+                                                <div class="text-[10px] text-[#6b7280] leading-tight mt-0.5 whitespace-nowrap">{{ entry.shift_time_label }}</div>
+                                            {% endif %}
                                         {% else %}
                                             <span
-                                                class="inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold max-w-[70px] truncate bg-[#e8f0fe] text-[#3a5bbf] border border-[#c5d4f8]"
-                                                title="{{ entry.notes }}"
+                                                class="inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold max-w-[90px] truncate bg-[#e8f0fe] text-[#3a5bbf] border border-[#c5d4f8]"
+                                                title="{% if entry.shift_time_label %}{{ entry.shift_time_label }}{% endif %}{% if entry.notes %} ({{ entry.notes }}){% endif %}"
                                             >
                                                 {{ entry.shift.employee_shift }}
                                             </span>
+                                            {% if entry.shift_time_label %}
+                                                <div class="text-[10px] text-[#6b7280] leading-tight mt-0.5 whitespace-nowrap">{{ entry.shift_time_label }}</div>
+                                            {% endif %}
                                         {% endif %}
                                     {% else %}
                                         <span

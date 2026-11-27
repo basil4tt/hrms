@@ -130,7 +130,7 @@
 }
 .cal-cell {
   border-radius: 6px;
-  min-height: 62px;
+  min-height: 68px;
   padding: 6px 8px;
   font-size: .76rem;
   position: relative;
@@ -227,6 +227,23 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+.cal-shift-tag {
+  margin-top: 2px;
+  font-size: .58rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-shift-time {
+  font-size: .53rem;
+  line-height: 1.15;
+  opacity: .85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cal-empty        { background: transparent; cursor: default; }
 .cal-out-of-range { background: #f8f9fa; color: #ced4da; cursor: default; }
@@ -482,18 +499,27 @@
         {% if cell is None %}
           <div class="cal-cell cal-empty"></div>
         {% elif cell.status == "out_of_range" %}
-          <div class="cal-cell cal-out-of-range">
+          <div class="cal-cell cal-out-of-range"
+               title="{{ cell.date|date:'d M Y' }}{% if cell.shift_label %} — {{ cell.shift_label }}{% if cell.shift_time %} ({{ cell.shift_time }}){% endif %}{% endif %}">
             <div class="cal-day-num">{{ cell.day }}</div>
+            {% if cell.shift_label %}
+              <div class="cal-shift-tag">{{ cell.shift_label }}</div>
+              {% if cell.shift_time %}<div class="cal-shift-time">{{ cell.shift_time }}</div>{% endif %}
+            {% endif %}
           </div>
         {% else %}
           <div class="cal-cell cal-{{ cell.status }}{% if cell.future_part %} cal-split cal-split--ahead{% endif %}{% if cell.is_conflict %} cal-has-conflict{% elif cell.resolution %} cal-resolved-conflict{% endif %}"
                data-date="{{ cell.date|date:'Y-m-d' }}"
                data-groups="{{ cell.groups }}"
                data-halves="{{ cell.halves_data }}"
-               title="{{ cell.date|date:'d M Y' }}{% if cell.split_label %} — {{ cell.split_label }}{% elif cell.detail %} — {{ cell.detail }}{% endif %}{% if cell.conflict_with == 'paid_leave' or cell.conflict_with == 'unpaid_leave' %} ⚠ {% if cell.conflict_reason %}{{ cell.conflict_reason }}{% else %}conflicts with {{ cell.conflict_with }}{% endif %}{% elif cell.conflict_with == 'holiday_ot' %} HO — Holiday Overtime{% elif cell.conflict_with == 'week_off_ot' %} WO — Week Off Overtime{% elif cell.conflict_with == 'regular_ot' %} OT — Overtime{% elif cell.resolution %} ✓ resolved{% endif %}{% if not readonly %}{% trans ' — Ctrl/Shift-click to select multiple days' %}{% endif %}"
+               title="{{ cell.date|date:'d M Y' }}{% if cell.shift_label %} — {{ cell.shift_label }}{% if cell.shift_time %} ({{ cell.shift_time }}){% endif %}{% endif %}{% if cell.split_label %} — {{ cell.split_label }}{% elif cell.detail %} — {{ cell.detail }}{% endif %}{% if cell.conflict_with == 'paid_leave' or cell.conflict_with == 'unpaid_leave' %} ⚠ {% if cell.conflict_reason %}{{ cell.conflict_reason }}{% else %}conflicts with {{ cell.conflict_with }}{% endif %}{% elif cell.conflict_with == 'holiday_ot' %} HO — Holiday Overtime{% elif cell.conflict_with == 'week_off_ot' %} WO — Week Off Overtime{% elif cell.conflict_with == 'regular_ot' %} OT — Overtime{% elif cell.resolution %} ✓ resolved{% endif %}{% if not readonly %}{% trans ' — Ctrl/Shift-click to select multiple days' %}{% endif %}"
                {% if not readonly %}onclick="msCalCellClick(event, this, '{{ cell.date|date:'Y-m-d' }}', '{{ cell.conflict_with|default:'' }}', '{{ cell.detail|default:''|escapejs }}')"{% endif %}
                {% if cell.split_style %}style="{{ cell.split_style }}{% if readonly %};cursor:default{% endif %}"{% elif readonly %}style="cursor:default;"{% endif %}>
             <div class="cal-day-num">{{ cell.day }}</div>
+            {% if cell.shift_label %}
+              <div class="cal-shift-tag">{{ cell.shift_label }}</div>
+              {% if cell.shift_time %}<div class="cal-shift-time">{{ cell.shift_time }}</div>{% endif %}
+            {% endif %}
             {% if cell.split_label %}{% elif cell.detail %}<div class="cal-day-detail">{{ cell.detail }}</div>{% endif %}
             {% if cell.conflict_with == "paid_leave" or cell.conflict_with == "unpaid_leave" %}
               <div class="cal-conflict-dot" title="{% trans 'Leave conflict — click to regularize' %}"></div>

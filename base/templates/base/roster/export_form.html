@@ -1,0 +1,112 @@
+{% load i18n %}
+
+<div class="oh-modal__dialog-header">
+    <h2 class="text-md font-semibold" id="createTitle">
+        {% trans "Export Roster" %}
+    </h2>
+    <button
+        type="button"
+        class="oh-modal__close--custom"
+        onclick="$(this).closest('.oh-modal--show').removeClass('oh-modal--show')"
+        aria-label="{% trans 'Close' %}"
+    >
+        <ion-icon
+            name="close-outline"
+            role="img"
+            class="md hydrated"
+            aria-label="{% trans 'close outline' %}"
+        ></ion-icon>
+    </button>
+</div>
+
+<div class="oh-modal__dialog-body">
+    <form
+        method="get"
+        action="{% url 'roster-export' %}"
+        onsubmit="setTimeout(function(){ $('#genericModal').removeClass('oh-modal--show'); }, 150);"
+    >
+        <div class="oh-general__tab-target oh-profile-section bg-[white] rounded-md border border-dark-50 w-full">
+            <div class="oh-profile-section__card">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="oh-input-wrapper">
+                            <label class="oh-label">{% trans "Department" %}</label>
+                            <select name="department" id="rosterExportDepartment" class="oh-select oh-select-2 w-100">
+                                <option value="">{% trans "All Departments" %}</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept.pk }}">{{ dept.department }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <div class="oh-input-wrapper">
+                            <label class="oh-label oh-label--mandatory">{% trans "From Date" %}</label>
+                            <input
+                                type="date"
+                                name="from_date"
+                                id="rosterExportFromDate"
+                                value="{{ default_start }}"
+                                class="oh-input w-100"
+                                required
+                            >
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <div class="oh-input-wrapper">
+                            <label class="oh-label oh-label--mandatory">{% trans "To Date" %}</label>
+                            <input
+                                type="date"
+                                name="to_date"
+                                id="rosterExportToDate"
+                                value="{{ default_end }}"
+                                class="oh-input w-100"
+                                required
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="oh-alert oh-alert--info mb-3" style="font-size: 13px">
+                    <ion-icon name="information-circle-outline" class="me-1"></ion-icon>
+                    {% trans "Downloads an Excel workbook with both the Roster matrix (re-importable) and a Date x Shift Summary sheet." %}
+                </div>
+
+                <div class="oh-modal__dialog-footer p-0 mt-2">
+                    <button type="submit" class="oh-btn oh-btn--secondary oh-btn--shadow">
+                        <ion-icon name="cloud-download-outline" class="me-1"></ion-icon>
+                        {% trans "Export Excel" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+      var filterForm = document.getElementById("filterForm");
+      if (filterForm) {
+        var fFrom = filterForm.querySelector('[name="from_date"]');
+        var fTo = filterForm.querySelector('[name="to_date"]');
+        var fDept = filterForm.querySelector('[name="department"]');
+        if (fFrom && fFrom.value) {
+          document.getElementById("rosterExportFromDate").value = fFrom.value;
+        }
+        if (fTo && fTo.value) {
+          document.getElementById("rosterExportToDate").value = fTo.value;
+        }
+        if (fDept && fDept.value) {
+          document.getElementById("rosterExportDepartment").value = fDept.value;
+        }
+      }
+      var body = document.getElementById("genericModalBody");
+      if (body && typeof $ !== "undefined") {
+        $(body).find("select").each(function () {
+          if (!$(this).data("select2-id")) {
+            $(this).addClass("oh-select oh-select-2").select2();
+          }
+        });
+      }
+    })();
+</script>

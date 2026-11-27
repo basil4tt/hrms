@@ -1,3 +1,24 @@
+{% load i18n %}
+<style>
+    .lc-asset-section {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 14px 16px 4px;
+        margin-bottom: 14px;
+        background: #fafbfc;
+    }
+    .lc-asset-section__title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #475569;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+</style>
+
 <div id="formContainer">
     {% include "generic/horilla_form.html" %}
 </div>
@@ -12,7 +33,110 @@
             $("#id_notify_before_parent_div").hide()
         }
     }
+
+    function arrangeAssetFormSections() {
+        var container = document.getElementById("formContainer");
+        if (!container) return;
+        var card = container.querySelector(".oh-profile-section__card");
+        if (!card || card.dataset.assetGrouped === "1") return;
+        var mainRow = card.querySelector(":scope > .row");
+        if (!mainRow) return;
+
+        var sections = [
+            {
+                title: "{% trans 'Basic Information' %}",
+                fields: [
+                    "asset_name",
+                    "asset_tracking_id",
+                    "asset_category_id",
+                    "asset_status",
+                    "asset_purchase_date",
+                    "asset_purchase_cost",
+                    "asset_lot_number_id",
+                    "quantity",
+                    "expiry_date",
+                    "notify_before",
+                    "asset_tag",
+                ],
+            },
+            {
+                title: "{% trans 'Laptop & System Specifications' %}",
+                fields: [
+                    "make",
+                    "model",
+                    "processor",
+                    "ram",
+                    "hard_disk",
+                    "graphics_card",
+                    "mac_address",
+                    "os_details",
+                    "os_activation",
+                ],
+            },
+            {
+                title: "{% trans 'Peripherals & Accessories' %}",
+                fields: [
+                    "monitor",
+                    "mouse",
+                    "external_hard_disk_model",
+                    "external_hard_disk_serial_no",
+                ],
+            },
+            {
+                title: "{% trans 'Notes' %}",
+                fields: [
+                    "asset_description",
+                    "additional_details",
+                ],
+            },
+        ];
+
+        var nonFieldErrors = mainRow.querySelector(".js-non-field-errors");
+        var fragment = document.createDocumentFragment();
+        if (nonFieldErrors) {
+            var errRow = document.createElement("div");
+            errRow.className = "row";
+            errRow.appendChild(nonFieldErrors);
+            fragment.appendChild(errRow);
+        }
+
+        sections.forEach(function (section) {
+            var sectionNodes = [];
+            section.fields.forEach(function (fieldName) {
+                var el = document.getElementById("id_" + fieldName + "_parent_div");
+                if (el && el.parentNode === mainRow) {
+                    sectionNodes.push(el);
+                }
+            });
+            if (!sectionNodes.length) return;
+
+            var box = document.createElement("div");
+            box.className = "lc-asset-section";
+
+            var header = document.createElement("div");
+            header.className = "lc-asset-section__title";
+            header.textContent = section.title;
+            box.appendChild(header);
+
+            var row = document.createElement("div");
+            row.className = "row";
+            sectionNodes.forEach(function (el) {
+                row.appendChild(el);
+            });
+            box.appendChild(row);
+            fragment.appendChild(box);
+        });
+
+        card.insertBefore(fragment, mainRow);
+        if (!mainRow.children.length) {
+            mainRow.remove();
+        }
+        card.dataset.assetGrouped = "1";
+    }
+
+    arrangeAssetFormSections();
     $(document).ready(function(){
+        arrangeAssetFormSections();
         toggleNotify($("#id_expiry_date"))
     })
 </script>

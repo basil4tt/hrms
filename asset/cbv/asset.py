@@ -22,6 +22,8 @@ class AssetListView(HorillaListView):
     columns = [
         (_("Serial No."), "asset_tracking_id"),
         (_("Asset Name"), "asset_name_display"),
+        (_("Asset Tag"), "asset_tag"),
+        (_("MAC Address"), "mac_address"),
         (_("Status"), "asset_status_col"),
         "asset_lot_number_id",
     ]
@@ -115,10 +117,26 @@ class AssetInformationView(HorillaDetailedView):
         (_("Status"), "asset_status_col"),
         "asset_lot_number_id",
         "asset_category_id",
+        "mac_address",
+        "asset_tag",
+        "make",
+        "model",
+        "processor",
+        "ram",
+        "hard_disk",
+        "graphics_card",
+        "os_details",
+        "os_activation",
+        "monitor",
+        "mouse",
+        "external_hard_disk_model",
+        "external_hard_disk_serial_no",
         "asset_description",
+        "additional_details",
     ]
     cols = {
         "asset_description": 12,
+        "additional_details": 12,
     }
 
     def get_context_data(self, **kwargs: Any):

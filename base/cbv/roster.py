@@ -51,6 +51,31 @@ def _week_start():
     return week_start(today)
 
 
+def _attach_shift_times(entries):
+    """Attach ``shift_time_label`` (e.g. '07:00 AM - 04:00 PM') from EmployeeShiftSchedule."""
+    from base.models import EmployeeShiftSchedule
+
+    shift_ids = {e.shift_id for e in entries if getattr(e, "shift_id", None) and not e.is_off}
+    if not shift_ids:
+        for e in entries:
+            e.shift_time_label = ""
+        return
+
+    sched_map = {}
+    for s in EmployeeShiftSchedule._base_manager.filter(
+        shift_id_id__in=shift_ids, is_active=True
+    ).select_related("day"):
+        if s.day and s.start_time and s.end_time:
+            label = f"{s.start_time.strftime('%I:%M %p').lstrip('0')} - {s.end_time.strftime('%I:%M %p').lstrip('0')}"
+            sched_map[(s.shift_id_id, s.day.day.lower())] = label
+
+    for e in entries:
+        if getattr(e, "shift_id", None) and not e.is_off and e.date:
+            e.shift_time_label = sched_map.get((e.shift_id, e.date.strftime("%A").lower()), "")
+        else:
+            e.shift_time_label = ""
+
+
 # ---------------------------------------------------------------------------
 # Roster Home
 # ---------------------------------------------------------------------------
@@ -132,6 +157,15 @@ class RosterNavView(HorillaNavView):
                     hx-get="{reverse('roster-publish-form')}"
                 """,
             },
+            {
+                "action": _("Export Roster"),
+                "attrs": f"""
+                    data-toggle="oh-modal-toggle"
+                    data-target="#genericModal"
+                    hx-target="#genericModalBody"
+                    hx-get="{reverse('roster-export-form')}"
+                """,
+            },
         ]
 
     def get_context_data(self, **kwargs):
@@ -210,11 +244,12 @@ class RosterGridView(HorillaCardView):
         )
 
         page_emp_ids = [emp.pk for emp in paginated]
-        roster_entries = self.queryset.filter(
-            employee_id__in=page_emp_ids
-        ).select_related(
-            "shift", "employee", "employee__employee_work_info__department_id"
+        roster_entries = list(
+            self.queryset.filter(employee_id__in=page_emp_ids).select_related(
+                "shift", "employee", "employee__employee_work_info__department_id"
+            )
         )
+        _attach_shift_times(roster_entries)
 
         roster_map = {}
         for entry in roster_entries:
@@ -318,6 +353,7 @@ class RosterCellUpdateView(View):
             if not roster.created_by_id:
                 roster.created_by = getattr(request.user, "employee_get", None)
             roster.save()
+            _attach_shift_times([roster])
             return render(
                 request,
                 "base/roster/roster_cell.html",
@@ -556,20 +592,24 @@ class MyRosterView(View):
 
     def get(self, request, *args, **kwargs):
         employee = getattr(request.user, "employee_get", None)
-        today = date.today()
-        end = today + timedelta(days=13)
+        today = _parse_date(request.GET.get("from_date"), date.today())
+        end = _parse_date(request.GET.get("to_date"), today + timedelta(days=13))
+        if end < today:
+            end = today
 
         entries = []
         if employee:
-            entries = (
-                Roster.objects.filter(
+            entries = list(
+                Roster._base_manager.filter(
                     employee=employee,
+                    is_active=True,
                     date__range=(today, end),
                     is_published=True,
                 )
                 .select_related("shift", "department")
                 .order_by("date")
             )
+            _attach_shift_times(entries)
 
         return render(
             request,
@@ -913,3 +953,220 @@ class RosterImportView(View):
                 "error": message,
             },
         )
+
+
+# ---------------------------------------------------------------------------
+# Roster Export
+# ---------------------------------------------------------------------------
+
+
+@method_decorator(login_required, name="dispatch")
+@method_decorator(hx_request_required, name="dispatch")
+class RosterExportFormView(View):
+    template_name = "base/roster/export_form.html"
+
+    def get(self, request, *args, **kwargs):
+        from base.models import Department
+
+        today = _week_start()
+        return render(
+            request,
+            self.template_name,
+            {
+                "departments": Department.objects.all(),
+                "default_start": today.isoformat(),
+                "default_end": (today + timedelta(days=6)).isoformat(),
+            },
+        )
+
+
+@method_decorator(login_required, name="dispatch")
+class RosterExportView(View):
+    MAX_EXPORT_DAYS = 93
+
+    def get(self, request, *args, **kwargs):
+        today = _week_start()
+        from_date = _parse_date(request.GET.get("from_date"), today)
+        to_date = _parse_date(request.GET.get("to_date"), from_date + timedelta(days=6))
+        if to_date < from_date:
+            to_date = from_date
+        if (to_date - from_date).days > self.MAX_EXPORT_DAYS:
+            to_date = from_date + timedelta(days=self.MAX_EXPORT_DAYS)
+        date_range = [
+            from_date + timedelta(days=i)
+            for i in range((to_date - from_date).days + 1)
+        ]
+
+        dept_id = request.GET.get("department") or None
+        scope = _roster_scope(request)
+
+        entries_qs = Roster.objects.filter(
+            date__gte=from_date, date__lte=to_date
+        ).select_related("employee", "shift", "department")
+        if dept_id:
+            entries_qs = entries_qs.filter(department_id=dept_id)
+        if scope is not None:
+            entries_qs = entries_qs.filter(employee_id__in=scope)
+
+        roster_map = {}
+        entry_emp_ids = set()
+        for entry in entries_qs:
+            roster_map[(entry.employee_id, entry.date)] = entry
+            entry_emp_ids.add(entry.employee_id)
+
+        selected_company = request.session.get("selected_company")
+        emp_qs = (
+            Employee.objects.filter(is_active=True, employee_work_info__isnull=False)
+            .select_related("employee_work_info__department_id")
+            .order_by("employee_first_name", "employee_last_name")
+        )
+        if selected_company and selected_company != "all":
+            emp_qs = emp_qs.filter(employee_work_info__company_id=selected_company)
+        if dept_id:
+            emp_qs = emp_qs.filter(employee_work_info__department_id=dept_id)
+        elif entry_emp_ids:
+            emp_qs = Employee.objects.filter(pk__in=entry_emp_ids).order_by(
+                "employee_first_name", "employee_last_name"
+            )
+        if scope is not None:
+            emp_qs = emp_qs.filter(pk__in=scope)
+        employees = list(emp_qs)
+
+        shifts = list(EmployeeShift.objects.order_by("id"))
+        shift_names = [s.employee_shift for s in shifts]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Roster"
+
+        header_fill = PatternFill("solid", fgColor="5C6BC0")
+        weekend_fill = PatternFill("solid", fgColor="ECEEF6")
+        off_fill = PatternFill("solid", fgColor="FFF3E0")
+        shift_fill = PatternFill("solid", fgColor="E8F0FE")
+        meta_fill = PatternFill("solid", fgColor="F0F2F8")
+        even_fill = PatternFill("solid", fgColor="FAFBFF")
+        white_font = Font(bold=True, color="FFFFFF", size=10)
+        meta_font = Font(bold=True, color="4A5173", size=10)
+        off_font = Font(bold=True, color="E65100", size=10)
+        shift_font = Font(bold=False, color="1E3A8A", size=10)
+        center = Alignment(horizontal="center", vertical="center")
+        left = Alignment(horizontal="left", vertical="center")
+        left_wrap = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+        # Sheet 1: Employee x Date matrix (re-importable via Import Roster)
+        for col, label in enumerate(["Employee Name", "Employee ID"], start=1):
+            c = ws.cell(1, col, label)
+            c.fill = meta_fill
+            c.font = meta_font
+            c.alignment = left if col == 1 else center
+
+        for col_i, d in enumerate(date_range, start=3):
+            c = ws.cell(1, col_i)
+            c.value = d
+            c.number_format = "ddd dd/mm"
+            c.alignment = center
+            if d.weekday() >= 5:
+                c.fill = weekend_fill
+                c.font = Font(bold=True, color="8B91B0", size=10)
+            else:
+                c.fill = header_fill
+                c.font = white_font
+            ws.column_dimensions[get_column_letter(col_i)].width = 18
+
+        ws.column_dimensions["A"].width = 26
+        ws.column_dimensions["B"].width = 13
+        ws.row_dimensions[1].height = 26
+
+        for row_i, emp in enumerate(employees, start=2):
+            ws.cell(row_i, 1, emp.get_full_name()).alignment = left
+            id_cell = ws.cell(row_i, 2, emp.pk)
+            id_cell.alignment = center
+            id_cell.font = Font(size=10, color="777777")
+            if row_i % 2 == 0:
+                ws.cell(row_i, 1).fill = even_fill
+                ws.cell(row_i, 2).fill = even_fill
+            ws.row_dimensions[row_i].height = 20
+
+            for col_i, d in enumerate(date_range, start=3):
+                c = ws.cell(row_i, col_i)
+                c.alignment = center
+                entry = roster_map.get((emp.pk, d))
+                if entry:
+                    if entry.is_off:
+                        c.value = "OFF"
+                        c.fill = off_fill
+                        c.font = off_font
+                    elif entry.shift:
+                        c.value = entry.shift.employee_shift
+                        c.fill = shift_fill
+                        c.font = shift_font
+                    if entry.notes:
+                        c.comment = Comment(entry.notes, "Leapcodes")
+                elif d.weekday() >= 5:
+                    c.fill = weekend_fill
+
+        ws.freeze_panes = "C2"
+
+        # Sheet 2: Date x Shift summary (grouped by Date, Day, Shifts, Off, Notes)
+        ws_summary = wb.create_sheet("Shift Summary")
+        summary_headers = ["Date", "Day"] + shift_names + ["Off", "Notes / Leave"]
+        for col_i, h in enumerate(summary_headers, start=1):
+            c = ws_summary.cell(1, col_i, h)
+            c.fill = header_fill
+            c.font = white_font
+            c.alignment = center
+            ws_summary.column_dimensions[get_column_letter(col_i)].width = (
+                14 if col_i <= 2 else 24
+            )
+        ws_summary.row_dimensions[1].height = 26
+
+        for row_i, d in enumerate(date_range, start=2):
+            date_cell = ws_summary.cell(row_i, 1, d)
+            date_cell.number_format = "dd-mmm-yy"
+            date_cell.alignment = center
+            day_cell = ws_summary.cell(row_i, 2, d.strftime("%A"))
+            day_cell.alignment = center
+
+            by_shift = {s_name: [] for s_name in shift_names}
+            offs = []
+            notes_list = []
+
+            for emp in employees:
+                entry = roster_map.get((emp.pk, d))
+                if not entry:
+                    continue
+                emp_name = emp.get_full_name()
+                if entry.is_off:
+                    offs.append(emp_name)
+                elif entry.shift and entry.shift.employee_shift in by_shift:
+                    by_shift[entry.shift.employee_shift].append(emp_name)
+                if entry.notes:
+                    notes_list.append(f"{emp_name}: {entry.notes}")
+
+            for idx, s_name in enumerate(shift_names, start=3):
+                cell = ws_summary.cell(
+                    row_i, idx, ", ".join(by_shift[s_name]) if by_shift[s_name] else "-"
+                )
+                cell.alignment = left_wrap
+
+            off_cell = ws_summary.cell(
+                row_i, len(shift_names) + 3, ", ".join(offs) if offs else "-"
+            )
+            off_cell.alignment = left_wrap
+
+            note_cell = ws_summary.cell(
+                row_i,
+                len(shift_names) + 4,
+                ", ".join(notes_list) if notes_list else "",
+            )
+            note_cell.alignment = left_wrap
+
+        ws_summary.freeze_panes = "C2"
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        filename = f"roster_export_{from_date.isoformat()}_{to_date.isoformat()}.xlsx"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        wb.save(response)
+        return response

@@ -57,19 +57,19 @@ def history_date_label(history_date, today=None):
 
 def _actor_name(updated_by):
     if updated_by is None:
-        return _("Horilla Bot")
+        return _("Leapcodes Bot")
     if hasattr(updated_by, "get_full_name"):
         return updated_by.get_full_name() or str(updated_by)
-    return str(updated_by) or _("Horilla Bot")
+    return str(updated_by) or _("Leapcodes Bot")
 
 
 def _actor_avatar(updated_by):
     if updated_by is None:
-        return "https://ui-avatars.com/api/?name=Horilla+Bot&background=random"
+        return "https://ui-avatars.com/api/?name=Leapcodes+Bot&background=random"
     getter = getattr(updated_by, "get_avatar", None)
     if callable(getter):
         return getter()
-    return "https://ui-avatars.com/api/?name=Horilla+Bot&background=random"
+    return "https://ui-avatars.com/api/?name=Leapcodes+Bot&background=random"
 
 
 _HTML_TAG_RE = re.compile(r"<\s*/?\s*[a-zA-Z][^>]*>")

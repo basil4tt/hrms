@@ -88,12 +88,30 @@ from horilla_views.generic.cbv.views import HorillaFormView
 from notifications.signals import notify
 
 
+def _can_delete_closed_allocations(asset):
+    """Allow deleting assets with no active allocation when marked Lost/Not-Available."""
+    assignments = AssetAssignment._base_manager
+    if assignments.filter(asset_id=asset, return_date__isnull=True).exists():
+        return False
+    return (
+        asset.asset_status == "Not-Available"
+        or assignments.filter(
+            asset_id=asset, return_status__in=["Lost", "Major damage"]
+        ).exists()
+    )
+
+
 def asset_del(request, asset):
     """
     Handle the deletion of an asset and provide message to the user.
     """
     try:
-        asset.delete()
+        with transaction.atomic():
+            if _can_delete_closed_allocations(asset):
+                AssetAssignment._base_manager.filter(
+                    asset_id=asset, return_date__isnull=False
+                ).delete()
+            asset.delete()
         messages.success(request, _("Asset deleted successfully"))
     except ProtectedError:
         messages.error(request, _("You cannot delete this asset."))
@@ -364,8 +382,8 @@ def asset_delete(request, asset_id):
     asset_cat_id = asset.asset_category_id.id
     is_hx_request = bool(request.headers.get("HX-Request"))
     asset_list_filter = request.GET.get("asset_list")
-    asset_allocation = AssetAssignment.objects.filter(asset_id=asset).first()
-    active_assignments = AssetAssignment.objects.filter(
+    asset_allocation = AssetAssignment._base_manager.filter(asset_id=asset).first()
+    active_assignments = AssetAssignment._base_manager.filter(
         asset_id=asset, return_date__isnull=True
     ).exists()
     if asset_list_filter:
@@ -386,7 +404,7 @@ def asset_delete(request, asset_id):
         }
         if active_assignments:
             messages.info(request, _("Asset is in use"))
-        elif asset_allocation:
+        elif asset_allocation and not _can_delete_closed_allocations(asset):
             messages.error(request, _("Asset is used in allocation!."))
         else:
             asset_del(request, asset)
@@ -401,7 +419,7 @@ def asset_delete(request, asset_id):
         if active_assignments:
             messages.info(request, _("Asset is in use"))
             return asset_list(request, asset_cat_id)
-        if asset_allocation:
+        if asset_allocation and not _can_delete_closed_allocations(asset):
             messages.error(request, _("Asset is used in allocation!."))
             return asset_list(request, asset_cat_id)
         asset_del(request, asset)
@@ -411,7 +429,7 @@ def asset_delete(request, asset_id):
         return redirect(
             f"/asset/asset-information/{asset.id}/?{previous_data}&requests_ids={instances_list}&asset_info=true"
         )
-    elif asset_allocation:
+    elif asset_allocation and not _can_delete_closed_allocations(asset):
         messages.error(request, _("Asset is used in allocation!."))
         return redirect(
             f"/asset/asset-information/{asset.id}/?{previous_data}&requests_ids={instances_list}&asset_info=true"
@@ -1383,6 +1401,24 @@ ASSET_IMPORT_COLUMNS = [
     "Status",
 ]
 
+ASSET_OPTIONAL_IMPORT_COLUMNS = [
+    "MAC Address",
+    "Asset Tag",
+    "Make",
+    "Model",
+    "Processor",
+    "RAM",
+    "Hard Disk",
+    "Graphics Card",
+    "OS Details",
+    "OS Activation",
+    "Monitor",
+    "Mouse",
+    "External Hard Disk Model",
+    "External Hard Disk Serial No.",
+    "Additional Details",
+]
+
 
 def spreadsheetml_asset_import(dataframe):
     """
@@ -1398,7 +1434,9 @@ def spreadsheetml_asset_import(dataframe):
             created_count += 1
         except Exception as exception:
             error_row = {
-                column: convert_nan(row.get(column)) for column in ASSET_IMPORT_COLUMNS
+                column: convert_nan(row.get(column))
+                for column in ASSET_IMPORT_COLUMNS + ASSET_OPTIONAL_IMPORT_COLUMNS
+                if column in ASSET_IMPORT_COLUMNS or column in dataframe.columns
             }
             error_row["Error"] = _friendly_import_error(exception)
             error_rows.append(error_row)
@@ -1428,6 +1466,23 @@ def _import_asset_row(row):
     category_name = convert_nan(row["Category"])
     lot_number = convert_nan(row["Batch number"])
     status = convert_nan(row["Status"])
+    mac_address = convert_nan(row.get("MAC Address"))
+    asset_tag = convert_nan(row.get("Asset Tag"))
+    make = convert_nan(row.get("Make"))
+    model = convert_nan(row.get("Model"))
+    processor = convert_nan(row.get("Processor"))
+    ram = convert_nan(row.get("RAM"))
+    hard_disk = convert_nan(row.get("Hard Disk"))
+    graphics_card = convert_nan(row.get("Graphics Card"))
+    os_details = convert_nan(row.get("OS Details"))
+    os_activation = convert_nan(row.get("OS Activation"))
+    monitor = convert_nan(row.get("Monitor"))
+    mouse = convert_nan(row.get("Mouse"))
+    external_hard_disk_model = convert_nan(row.get("External Hard Disk Model"))
+    external_hard_disk_serial_no = convert_nan(
+        row.get("External Hard Disk Serial No.")
+    )
+    additional_details = convert_nan(row.get("Additional Details"))
 
     asset_category, _created = AssetCategory.objects.get_or_create(
         asset_category_name=category_name
@@ -1442,6 +1497,21 @@ def _import_asset_row(row):
         asset_category_id=asset_category,
         asset_status=status,
         asset_lot_number_id=asset_lot_number,
+        mac_address=mac_address,
+        asset_tag=asset_tag,
+        make=make,
+        model=model,
+        processor=processor,
+        ram=ram,
+        hard_disk=hard_disk,
+        graphics_card=graphics_card,
+        os_details=os_details,
+        os_activation=os_activation,
+        monitor=monitor,
+        mouse=mouse,
+        external_hard_disk_model=external_hard_disk_model,
+        external_hard_disk_serial_no=external_hard_disk_serial_no,
+        additional_details=additional_details,
     )
     asset.save()
 
@@ -1558,6 +1628,21 @@ ASSET_EXPORT_COLUMNS = [
     ("asset_category_id", "Category"),
     ("asset_status", "Status"),
     ("asset_lot_number_id", "Batch number"),
+    ("mac_address", "MAC Address"),
+    ("asset_tag", "Asset Tag"),
+    ("make", "Make"),
+    ("model", "Model"),
+    ("processor", "Processor"),
+    ("ram", "RAM"),
+    ("hard_disk", "Hard Disk"),
+    ("graphics_card", "Graphics Card"),
+    ("os_details", "OS Details"),
+    ("os_activation", "OS Activation"),
+    ("monitor", "Monitor"),
+    ("mouse", "Mouse"),
+    ("external_hard_disk_model", "External Hard Disk Model"),
+    ("external_hard_disk_serial_no", "External Hard Disk Serial No."),
+    ("additional_details", "Additional Details"),
 ]
 
 
@@ -1597,6 +1682,21 @@ def asset_export_excel(request):
             "asset_category_id": [],
             "asset_status": [],
             "asset_lot_number_id": [],
+            "mac_address": [],
+            "asset_tag": [],
+            "make": [],
+            "model": [],
+            "processor": [],
+            "ram": [],
+            "hard_disk": [],
+            "graphics_card": [],
+            "os_details": [],
+            "os_activation": [],
+            "monitor": [],
+            "mouse": [],
+            "external_hard_disk_model": [],
+            "external_hard_disk_serial_no": [],
+            "additional_details": [],
         }
 
         fields_to_check = [
@@ -1608,6 +1708,21 @@ def asset_export_excel(request):
             "asset_category_id",
             "asset_status",
             "asset_lot_number_id",
+            "mac_address",
+            "asset_tag",
+            "make",
+            "model",
+            "processor",
+            "ram",
+            "hard_disk",
+            "graphics_card",
+            "os_details",
+            "os_activation",
+            "monitor",
+            "mouse",
+            "external_hard_disk_model",
+            "external_hard_disk_serial_no",
+            "additional_details",
         ]
 
         for asset in queryset:

@@ -2465,13 +2465,22 @@ def employee_bulk_archive(request):
     return with_bulk_result(JsonResponse({"message": "Success"}), done, failed)
 
 
+def _apply_default_password(user):
+    """Reset an employee user's password to the default and require change on login."""
+    from employee.models import DEFAULT_EMPLOYEE_PASSWORD
+
+    user.set_password(DEFAULT_EMPLOYEE_PASSWORD)
+    user.is_new_employee = True
+    user.save()
+    return DEFAULT_EMPLOYEE_PASSWORD
+
+
 @login_required
 @permission_required("employee.change_employee")
 def employee_reset_password_admin(request, emp_id):
     """
-    Generates a new random password for one employee and shows it once so
-    the admin can relay it manually -- the password is never emailed,
-    logged, or kept anywhere after this response.
+    Resets one employee's password to the default employee password and
+    displays it once in the confirmation modal.
     """
     employee = get_object_or_404(Employee, id=emp_id)
     results = []
@@ -2489,10 +2498,7 @@ def employee_reset_password_admin(request, emp_id):
             ),
         )
     elif user:
-        new_password = generate_random_password()
-        user.set_password(new_password)
-        user.is_new_employee = True
-        user.save()
+        new_password = _apply_default_password(user)
         results.append({"employee": employee, "password": new_password})
     return render(request, "employee/reset_password_result.html", {"results": results})
 
@@ -2502,8 +2508,7 @@ def employee_reset_password_admin(request, emp_id):
 @require_http_methods(["POST"])
 def employee_bulk_reset_password_admin(request):
     """
-    Generates a new random password for each selected employee and shows
-    them once -- same one-time-reveal contract as the individual action.
+    Resets each selected employee's password to the default employee password.
     """
     ids = json.loads(request.POST.get("ids", "[]"))
     employees = Employee.objects.filter(id__in=ids).select_related("employee_user_id")
@@ -2519,10 +2524,7 @@ def employee_bulk_reset_password_admin(request):
             # invalidate their own session immediately.
             skipped_self = True
             continue
-        new_password = generate_random_password()
-        user.set_password(new_password)
-        user.is_new_employee = True
-        user.save()
+        new_password = _apply_default_password(user)
         results.append({"employee": employee, "password": new_password})
     if skipped_self:
         messages.warning(

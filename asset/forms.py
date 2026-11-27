@@ -77,10 +77,26 @@ class AssetForm(ModelForm):
             "asset_category_id": _("Category"),
             "asset_status": _("Status"),
             "asset_lot_number_id": _("Batch Number"),
+            "mac_address": _("MAC Address"),
+            "asset_tag": _("Asset Tag"),
+            "make": _("Make"),
+            "model": _("Model"),
+            "processor": _("Processor"),
+            "ram": _("RAM"),
+            "os_details": _("OS Details"),
+            "hard_disk": _("Hard Disk"),
+            "graphics_card": _("Graphics Card"),
+            "os_activation": _("OS Activation"),
+            "monitor": _("Monitor"),
+            "mouse": _("Mouse"),
+            "external_hard_disk_model": _("External Hard Disk Model"),
+            "external_hard_disk_serial_no": _("External Hard Disk Serial No."),
+            "additional_details": _("Additional Details"),
         }
 
     cols = {
         "asset_description": 12,
+        "additional_details": 12,
     }
 
     def __init__(self, *args, **kwargs):
@@ -115,6 +131,7 @@ class AssetForm(ModelForm):
 
             self.fields["asset_lot_number_id"].choices = batch_no_choices
         self.fields["asset_description"] = self.fields.pop("asset_description")
+        self.fields["additional_details"] = self.fields.pop("additional_details")
 
     def clean(self):
         instance = self.instance

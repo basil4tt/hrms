@@ -32,6 +32,90 @@
                         {{ form.asset_status }}
                     </div>
                 </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.mac_address.id_for_label}}">{% trans "MAC Address" %}</label>
+                        {{ form.mac_address }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.asset_tag.id_for_label}}">{% trans "Asset Tag" %}</label>
+                        {{ form.asset_tag }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.make.id_for_label}}">{% trans "Make" %}</label>
+                        {{ form.make }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.model.id_for_label}}">{% trans "Model" %}</label>
+                        {{ form.model }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.processor.id_for_label}}">{% trans "Processor" %}</label>
+                        {{ form.processor }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.ram.id_for_label}}">{% trans "RAM" %}</label>
+                        {{ form.ram }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.os_details.id_for_label}}">{% trans "OS Details" %}</label>
+                        {{ form.os_details }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.hard_disk.id_for_label}}">{% trans "Hard Disk" %}</label>
+                        {{ form.hard_disk }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.graphics_card.id_for_label}}">{% trans "Graphics Card" %}</label>
+                        {{ form.graphics_card }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.os_activation.id_for_label}}">{% trans "OS Activation" %}</label>
+                        {{ form.os_activation }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.monitor.id_for_label}}">{% trans "Monitor" %}</label>
+                        {{ form.monitor }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.mouse.id_for_label}}">{% trans "Mouse" %}</label>
+                        {{ form.mouse }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.external_hard_disk_model.id_for_label}}">{% trans "External Hard Disk Model" %}</label>
+                        {{ form.external_hard_disk_model }}
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-12 col-lg-6">
+                    <div class="oh-input-group">
+                        <label class="oh-label" for="{{form.external_hard_disk_serial_no.id_for_label}}">{% trans "External Hard Disk Serial No." %}</label>
+                        {{ form.external_hard_disk_serial_no }}
+                    </div>
+                </div>
                 <!-- Full width -- Category and Batch Number are now
                      AJAX-searched Select2 comboboxes (see
                      asset/filters.py's AssetFilter.ajax_fields) and

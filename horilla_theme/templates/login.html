@@ -103,9 +103,188 @@
             };
         </script>
         <script src="{% static '/jquery/jquery.min.js' %}"></script>
+        <style>
+            .lc-butterfly-sky {
+                position: fixed;
+                inset: 0;
+                overflow: hidden;
+                pointer-events: none;
+                z-index: 0;
+            }
+            .lc-butterfly {
+                position: absolute;
+                opacity: 0;
+                will-change: transform, opacity;
+                filter: drop-shadow(0 6px 10px rgba(79, 70, 229, 0.16));
+            }
+            .lc-butterfly svg {
+                display: block;
+                overflow: visible;
+            }
+            .lc-wing-left {
+                transform-box: fill-box;
+                transform-origin: right center;
+                animation: lc-flap-left var(--flap, 0.42s) ease-in-out infinite alternate;
+            }
+            .lc-wing-right {
+                transform-box: fill-box;
+                transform-origin: left center;
+                animation: lc-flap-right var(--flap, 0.42s) ease-in-out infinite alternate;
+            }
+            @keyframes lc-flap-left {
+                0%   { transform: perspective(180px) rotateY(10deg) scaleX(1); }
+                100% { transform: perspective(180px) rotateY(62deg) scaleX(0.55); }
+            }
+            @keyframes lc-flap-right {
+                0%   { transform: perspective(180px) rotateY(-10deg) scaleX(1); }
+                100% { transform: perspective(180px) rotateY(-62deg) scaleX(0.55); }
+            }
+            @keyframes lc-glide-1 {
+                0%   { transform: translate(-10vw, 85vh) rotate(22deg) scale(0.85); opacity: 0; }
+                10%  { opacity: 0.72; }
+                35%  { transform: translate(26vw, 58vh) rotate(12deg) scale(0.95); }
+                65%  { transform: translate(62vw, 34vh) rotate(28deg) scale(1); }
+                90%  { opacity: 0.68; }
+                100% { transform: translate(108vw, 6vh) rotate(18deg) scale(0.9); opacity: 0; }
+            }
+            @keyframes lc-glide-2 {
+                0%   { transform: translate(-8vw, 48vh) rotate(14deg) scale(0.75); opacity: 0; }
+                12%  { opacity: 0.6; }
+                40%  { transform: translate(32vw, 32vh) rotate(24deg) scale(0.85); }
+                72%  { transform: translate(70vw, 44vh) rotate(8deg) scale(0.8); }
+                90%  { opacity: 0.55; }
+                100% { transform: translate(110vw, 18vh) rotate(20deg) scale(0.75); opacity: 0; }
+            }
+            @keyframes lc-glide-3 {
+                0%   { transform: translate(108vw, 78vh) rotate(-25deg) scale(0.8); opacity: 0; }
+                10%  { opacity: 0.65; }
+                42%  { transform: translate(68vw, 52vh) rotate(-14deg) scale(0.92); }
+                74%  { transform: translate(30vw, 28vh) rotate(-28deg) scale(0.88); }
+                90%  { opacity: 0.6; }
+                100% { transform: translate(-10vw, 8vh) rotate(-18deg) scale(0.8); opacity: 0; }
+            }
+            @keyframes lc-glide-4 {
+                0%   { transform: translate(16vw, 108vh) rotate(8deg) scale(0.7); opacity: 0; }
+                12%  { opacity: 0.58; }
+                45%  { transform: translate(34vw, 64vh) rotate(20deg) scale(0.82); }
+                75%  { transform: translate(58vw, 28vh) rotate(10deg) scale(0.78); }
+                90%  { opacity: 0.52; }
+                100% { transform: translate(84vw, -12vh) rotate(18deg) scale(0.72); opacity: 0; }
+            }
+            @keyframes lc-glide-5 {
+                0%   { transform: translate(106vw, 28vh) rotate(-16deg) scale(0.65); opacity: 0; }
+                12%  { opacity: 0.55; }
+                50%  { transform: translate(54vw, 18vh) rotate(-24deg) scale(0.75); }
+                88%  { opacity: 0.5; }
+                100% { transform: translate(-10vw, 42vh) rotate(-12deg) scale(0.68); opacity: 0; }
+            }
+            @keyframes lc-glide-6 {
+                0%   { transform: translate(-6vw, 20vh) rotate(26deg) scale(0.62); opacity: 0; }
+                12%  { opacity: 0.5; }
+                48%  { transform: translate(44vw, 12vh) rotate(14deg) scale(0.72); }
+                88%  { opacity: 0.48; }
+                100% { transform: translate(106vw, 32vh) rotate(22deg) scale(0.65); opacity: 0; }
+            }
+            .lc-b1 { animation: lc-glide-1 18s linear infinite; --flap: 0.36s; }
+            .lc-b2 { animation: lc-glide-2 23s linear -6s infinite; --flap: 0.44s; }
+            .lc-b3 { animation: lc-glide-3 21s linear -9s infinite; --flap: 0.39s; }
+            .lc-b4 { animation: lc-glide-4 19s linear -3s infinite; --flap: 0.41s; }
+            .lc-b5 { animation: lc-glide-5 25s linear -13s infinite; --flap: 0.48s; }
+            .lc-b6 { animation: lc-glide-6 22s linear -16s infinite; --flap: 0.42s; }
+            @media (prefers-reduced-motion: reduce) {
+                .lc-butterfly, .lc-wing-left, .lc-wing-right {
+                    animation: none !important;
+                }
+                .lc-b1 { opacity: 0.5; transform: translate(14vw, 24vh) rotate(18deg); }
+                .lc-b2 { opacity: 0.45; transform: translate(78vw, 28vh) rotate(-18deg); }
+                .lc-b3 { opacity: 0.45; transform: translate(20vw, 72vh) rotate(14deg); }
+                .lc-b4 { opacity: 0.4; transform: translate(82vw, 74vh) rotate(-14deg); }
+                .lc-b5, .lc-b6 { display: none; }
+            }
+        </style>
     </head>
     <body class="bg-[{{theme_obj.primary_200}}] font-[Inter,_sans-serif]">
-        <div class="oh-alert-container">
+        <div class="lc-butterfly-sky" aria-hidden="true">
+            <div class="lc-butterfly lc-b1">
+                <svg width="38" height="32" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#7C3AED" fill-opacity="0.72"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#6366F1" fill-opacity="0.65"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#8B5CF6" fill-opacity="0.72"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#4F46E5" fill-opacity="0.65"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#312E81" fill-opacity="0.8"/>
+                </svg>
+            </div>
+            <div class="lc-butterfly lc-b2">
+                <svg width="32" height="28" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#6366F1" fill-opacity="0.68"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#818CF8" fill-opacity="0.6"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#4F46E5" fill-opacity="0.68"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#A5B4FC" fill-opacity="0.6"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#312E81" fill-opacity="0.75"/>
+                </svg>
+            </div>
+            <div class="lc-butterfly lc-b3">
+                <svg width="36" height="30" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#9333EA" fill-opacity="0.68"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#7C3AED" fill-opacity="0.6"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#A855F7" fill-opacity="0.68"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#6366F1" fill-opacity="0.6"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#3B0764" fill-opacity="0.75"/>
+                </svg>
+            </div>
+            <div class="lc-butterfly lc-b4">
+                <svg width="30" height="26" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#4F46E5" fill-opacity="0.64"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#8B5CF6" fill-opacity="0.58"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#6366F1" fill-opacity="0.64"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#7C3AED" fill-opacity="0.58"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#312E81" fill-opacity="0.75"/>
+                </svg>
+            </div>
+            <div class="lc-butterfly lc-b5">
+                <svg width="28" height="24" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#8B5CF6" fill-opacity="0.6"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#C084FC" fill-opacity="0.55"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#7C3AED" fill-opacity="0.6"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#818CF8" fill-opacity="0.55"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#312E81" fill-opacity="0.7"/>
+                </svg>
+            </div>
+            <div class="lc-butterfly lc-b6">
+                <svg width="26" height="22" viewBox="0 0 40 34" fill="none">
+                    <g class="lc-wing-left">
+                        <path d="M20 17C14 5 2 3 3 13C4 19 12 20 20 18Z" fill="#6366F1" fill-opacity="0.58"/>
+                        <path d="M20 18C13 20 6 25 9 30C12 34 18 28 20 21Z" fill="#A5B4FC" fill-opacity="0.52"/>
+                    </g>
+                    <g class="lc-wing-right">
+                        <path d="M20 17C26 5 38 3 37 13C36 19 28 20 20 18Z" fill="#8B5CF6" fill-opacity="0.58"/>
+                        <path d="M20 18C27 20 34 25 31 30C28 34 22 28 20 21Z" fill="#6366F1" fill-opacity="0.52"/>
+                    </g>
+                    <rect x="19" y="12" width="2" height="11" rx="1" fill="#312E81" fill-opacity="0.7"/>
+                </svg>
+            </div>
+        </div>
+        <div class="oh-alert-container relative z-10">
             {% for message in messages %}
                 <div class="oh-alert oh-alert--animated {{ message.tags }}">
                     {{ message }}
@@ -113,7 +292,7 @@
             {% endfor %}
         </div>
 
-        <div class="h-screen w-full flex items-center justify-center">
+        <div class="relative z-10 h-screen w-full flex items-center justify-center">
             <div class="bg-white p-[50px] rounded-2xl [box-shadow:0px_0px_25px_#a1a1a1] w-[450px]">
                 <img
                     src="{% if white_label_company.icon %}{{white_label_company.icon.url}}{% else %}{% static 'images/ui/leapcode-logo.png' %}{% endif %}"

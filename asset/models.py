@@ -202,6 +202,95 @@ class Asset(HorillaModel):
     notify_before = models.IntegerField(
         default=1, null=True, verbose_name=_("Notify Before (days)")
     )
+    mac_address = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("MAC Address"),
+    )
+    asset_tag = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Asset Tag"),
+    )
+    make = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Make"),
+    )
+    model = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Model"),
+    )
+    processor = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Processor"),
+    )
+    ram = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name=_("RAM"),
+    )
+    os_details = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("OS Details"),
+    )
+    hard_disk = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Hard Disk"),
+    )
+    graphics_card = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Graphics Card"),
+    )
+    os_activation = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("OS Activation"),
+    )
+    monitor = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+        verbose_name=_("Monitor"),
+    )
+    mouse = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+        verbose_name=_("Mouse"),
+    )
+    external_hard_disk_model = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("External Hard Disk Model"),
+    )
+    external_hard_disk_serial_no = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("External Hard Disk Serial No."),
+    )
+    additional_details = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_("Additional Details"),
+    )
     objects = HorillaCompanyManager("asset_category_id__company_id")
 
     @classmethod

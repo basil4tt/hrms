@@ -264,6 +264,8 @@ class AssetCategoryListView(HorillaListView):
         (_("Category"), "asset_category_id"),
         (_("Status"), "asset_status_col"),
         "asset_tracking_id",
+        "asset_tag",
+        "mac_address",
         "asset_lot_number_id",
     ]
     show_filter_tags = True
@@ -424,6 +426,10 @@ class AssetCategoryNav(HorillaNavView):
         self.search_in = [
             ("asset_name", _("Name")),
             ("asset_category_id", _("Category")),
+            ("mac_address", _("MAC Address")),
+            ("asset_tag", _("Asset Tag")),
+            ("make", _("Make")),
+            ("model", _("Model")),
         ]
         # Opened with a filter already in the address (the dashboard's KPI cards and charts
         # link here that way): show just the filtered assets. The default grouping is for

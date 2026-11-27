@@ -2052,6 +2052,16 @@ urlpatterns = [
         roster.RosterTemplateDownloadView.as_view(),
         name="roster-template-download",
     ),
+    path(
+        "roster/export/form/",
+        roster.RosterExportFormView.as_view(),
+        name="roster-export-form",
+    ),
+    path(
+        "roster/export/",
+        roster.RosterExportView.as_view(),
+        name="roster-export",
+    ),
     # ── End Shift Roster ──────────────────────────────────────────────────
 ]
 

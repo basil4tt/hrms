@@ -95,6 +95,182 @@ class AssetPageTests(TestCase):
         self.assertIsNotNone(option, "the category is offered")
         self.assertIn("selected", option.group(0))
 
+    def test_asset_form_renders_and_saves_mac_asset_tag_and_additional_details(self):
+        category = AssetCategory.objects.create(asset_category_name="Laptops")
+        form_html = self.client.get(reverse("asset-creation-new"), **HX).content.decode()
+        self.assertIn("Laptop & System Specifications", form_html)
+        self.assertIn("Peripherals & Accessories", form_html)
+        for field in (
+            "mac_address",
+            "asset_tag",
+            "make",
+            "model",
+            "processor",
+            "ram",
+            "hard_disk",
+            "graphics_card",
+            "os_details",
+            "os_activation",
+            "monitor",
+            "mouse",
+            "external_hard_disk_model",
+            "external_hard_disk_serial_no",
+            "additional_details",
+        ):
+            self.assertIn(f'name="{field}"', form_html)
+
+        self.client.post(
+            reverse("asset-creation-new"),
+            {
+                "asset_name": "ThinkPad X1",
+                "asset_description": "Engineering laptop",
+                "asset_tracking_id": "TP-X1-001",
+                "asset_purchase_date": "2026-09-01",
+                "asset_purchase_cost": "1500",
+                "asset_status": "Available",
+                "quantity": "1",
+                "notify_before": "1",
+                "asset_category_id": str(category.pk),
+                "asset_lot_number_id": "",
+                "mac_address": "00:1A:2B:3C:4D:5E",
+                "asset_tag": "TAG-1001",
+                "make": "Lenovo",
+                "model": "ThinkPad X1 Carbon",
+                "processor": "Intel Core i7-1365U",
+                "ram": "32 GB",
+                "hard_disk": "1 TB NVMe SSD",
+                "graphics_card": "Intel Iris Xe",
+                "os_details": "Ubuntu 24.04 LTS",
+                "os_activation": "Activated (Digital License)",
+                "monitor": "Dell P2422H",
+                "mouse": "Logitech MX Master 3S",
+                "external_hard_disk_model": "WD My Passport 2TB",
+                "external_hard_disk_serial_no": "WDBYVG0020BBK-001",
+                "additional_details": "Issued with laptop bag",
+            },
+            **HX,
+        )
+        asset = Asset.objects.get(asset_tracking_id="TP-X1-001")
+        self.assertEqual(asset.mac_address, "00:1A:2B:3C:4D:5E")
+        self.assertEqual(asset.asset_tag, "TAG-1001")
+        self.assertEqual(asset.make, "Lenovo")
+        self.assertEqual(asset.model, "ThinkPad X1 Carbon")
+        self.assertEqual(asset.processor, "Intel Core i7-1365U")
+        self.assertEqual(asset.ram, "32 GB")
+        self.assertEqual(asset.hard_disk, "1 TB NVMe SSD")
+        self.assertEqual(asset.graphics_card, "Intel Iris Xe")
+        self.assertEqual(asset.os_details, "Ubuntu 24.04 LTS")
+        self.assertEqual(asset.os_activation, "Activated (Digital License)")
+        self.assertEqual(asset.monitor, "Dell P2422H")
+        self.assertEqual(asset.mouse, "Logitech MX Master 3S")
+        self.assertEqual(asset.external_hard_disk_model, "WD My Passport 2TB")
+        self.assertEqual(
+            asset.external_hard_disk_serial_no, "WDBYVG0020BBK-001"
+        )
+        self.assertEqual(asset.additional_details, "Issued with laptop bag")
+
+        detail_html = self.client.get(
+            reverse("asset-information", args=[asset.pk]), **HX
+        ).content.decode()
+        for value in (
+            "00:1A:2B:3C:4D:5E",
+            "TAG-1001",
+            "Lenovo",
+            "ThinkPad X1 Carbon",
+            "Intel Core i7-1365U",
+            "32 GB",
+            "1 TB NVMe SSD",
+            "Intel Iris Xe",
+            "Ubuntu 24.04 LTS",
+            "Activated (Digital License)",
+            "Dell P2422H",
+            "Logitech MX Master 3S",
+            "WD My Passport 2TB",
+            "WDBYVG0020BBK-001",
+            "Issued with laptop bag",
+        ):
+            self.assertIn(value, detail_html)
+
+        from asset.filters import AssetFilter
+
+        for term in (
+            "00:1A:2B:3C:4D:5E",
+            "TAG-1001",
+            "Lenovo",
+            "ThinkPad X1 Carbon",
+            "1 TB NVMe SSD",
+            "Intel Iris Xe",
+            "Dell P2422H",
+            "Logitech MX Master 3S",
+            "WD My Passport 2TB",
+            "WDBYVG0020BBK-001",
+            "Ubuntu 24.04",
+        ):
+            self.assertEqual(
+                list(AssetFilter({"search": term}, queryset=Asset.objects.all()).qs),
+                [asset],
+            )
+
+    def test_lost_asset_can_be_deleted_while_in_use_asset_is_blocked(self):
+        from datetime import date
+
+        from asset.models import Asset, AssetAssignment, AssetCategory, AssetItem
+
+        employee = make_employee(
+            company=make_company("Delete Co"),
+            email="asset-del@test.horilla",
+            first_name="Asset",
+            last_name="Owner",
+            user=make_user("asset-del-owner", password="pw"),
+        )
+        category = AssetCategory.objects.create(asset_category_name="Test Laptops")
+
+        lost_asset = Asset.objects.create(
+            asset_name="Lost Laptop",
+            asset_tracking_id="LOST-001",
+            asset_purchase_date=date(2026, 9, 1),
+            asset_purchase_cost=1200,
+            asset_category_id=category,
+            asset_status="Not-Available",
+        )
+        lost_item = AssetItem.objects.filter(asset_id=lost_asset).first()
+        if lost_item:
+            lost_item.status = "Lost"
+            lost_item.save()
+        AssetAssignment.objects.create(
+            asset_id=lost_asset,
+            asset_item_id=lost_item,
+            assigned_to_employee_id=employee,
+            assigned_by_employee_id=employee,
+            assigned_date=date(2026, 9, 2),
+            return_date=date(2026, 9, 5),
+            return_status="Lost",
+        )
+
+        self.client.post(reverse("asset-delete", args=[lost_asset.pk]), **HX)
+        self.assertFalse(Asset.objects.filter(pk=lost_asset.pk).exists())
+
+        active_asset = Asset.objects.create(
+            asset_name="Active Laptop",
+            asset_tracking_id="ACT-001",
+            asset_purchase_date=date(2026, 9, 1),
+            asset_purchase_cost=1200,
+            asset_category_id=category,
+            asset_status="In use",
+        )
+        active_item = AssetItem.objects.filter(asset_id=active_asset).first()
+        AssetAssignment.objects.create(
+            asset_id=active_asset,
+            asset_item_id=active_item,
+            assigned_to_employee_id=employee,
+            assigned_by_employee_id=employee,
+            assigned_date=date(2026, 9, 2),
+            return_date=None,
+        )
+
+        self.client.post(reverse("asset-delete", args=[active_asset.pk]), **HX)
+        self.assertTrue(Asset.objects.filter(pk=active_asset.pk).exists())
+
 
 class DefaultGroupingTests(TestCase):
     """The default grouping is for opening the page on its own, not for a filtered link."""

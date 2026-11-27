@@ -292,3 +292,92 @@ class RosterScopeTests(Base):
             **HX,
         )
         self.assertEqual(Roster.objects.filter(is_published=True).count(), 2)
+
+    def test_export_modal_and_workbook_respect_scope(self):
+        from io import BytesIO
+        import openpyxl
+
+        off_day = self.day + timedelta(days=1)
+        Roster.objects.create(
+            employee=self.report,
+            date=off_day,
+            department=self.department,
+            is_off=True,
+            notes="HD Leave",
+        )
+
+        nav_html = self.client.get(reverse("roster-nav"), **HX).content.decode()
+        self.assertIn("Export Roster", nav_html)
+
+        form_resp = self.client.get(reverse("roster-export-form"), **HX)
+        self.assertEqual(form_resp.status_code, 200)
+
+        mgr_resp = self.client.get(
+            reverse("roster-export"),
+            {"from_date": str(self.day), "to_date": str(off_day)},
+        )
+        self.assertEqual(mgr_resp.status_code, 200)
+        wb_mgr = openpyxl.load_workbook(BytesIO(mgr_resp.content))
+        self.assertEqual(wb_mgr.sheetnames, ["Roster", "Shift Summary"])
+        ws_roster = wb_mgr["Roster"]
+        exported_ids = [ws_roster.cell(r, 2).value for r in range(2, ws_roster.max_row + 1)]
+        self.assertEqual(exported_ids, [self.report.pk])
+        self.assertEqual(ws_roster.cell(2, 3).value, "Day")
+        self.assertEqual(ws_roster.cell(2, 4).value, "OFF")
+
+        _grant(self.manager_user, "base.change_roster")
+        admin_resp = self.client.get(
+            reverse("roster-export"),
+            {"from_date": str(self.day), "to_date": str(off_day)},
+        )
+        wb_admin = openpyxl.load_workbook(BytesIO(admin_resp.content))
+        ws_admin_roster = wb_admin["Roster"]
+        admin_ids = {
+            ws_admin_roster.cell(r, 2).value
+            for r in range(2, ws_admin_roster.max_row + 1)
+        }
+        self.assertEqual(admin_ids, {self.report.pk, self.stranger.pk})
+        ws_summary = wb_admin["Shift Summary"]
+        self.assertEqual(ws_summary.cell(1, 3).value, "Day")
+        self.assertIn(self.report.get_full_name(), ws_summary.cell(3, 4).value)
+        self.assertIn("HD Leave", ws_summary.cell(3, 5).value)
+
+    def test_my_roster_and_grid_display_shift_times(self):
+        from datetime import time
+        from base.models import EmployeeShiftDay, EmployeeShiftSchedule
+
+        mon, _ = EmployeeShiftDay.objects.get_or_create(day=self.day.strftime("%A").lower())
+        EmployeeShiftSchedule.objects.create(
+            shift_id=self.shift,
+            day=mon,
+            start_time=time(7, 0),
+            end_time=time(16, 0),
+            minimum_working_hour="08:00",
+        )
+        Roster.objects.filter(employee=self.report, date=self.day).update(is_published=True)
+
+        grid_html = self.client.get(
+            reverse("roster-grid"),
+            {"from_date": str(self.day), "to_date": str(self.day)},
+            **HX,
+        ).content.decode()
+        self.assertIn("7:00 AM - 4:00 PM", grid_html)
+
+        report_user = self.report.employee_user_id
+        report_user.is_new_employee = False
+        report_user.save(update_fields=["is_new_employee"])
+        self.client.force_login(report_user)
+        my_html = self.client.get(
+            reverse("my-roster"),
+            {"from_date": str(self.day), "to_date": str(self.day)},
+        ).content.decode()
+        self.assertIn("7:00 AM - 4:00 PM", my_html)
+
+        cal_resp = self.client.get(
+            "/my-dashboard/api/monthly-summary/",
+            {"year": str(self.day.year), "month": str(self.day.month)},
+        )
+        self.assertEqual(cal_resp.status_code, 200)
+        cal_html = cal_resp.content.decode()
+        self.assertIn("Day", cal_html)
+        self.assertIn("7:00 AM - 4:00 PM", cal_html)
